@@ -1,13 +1,14 @@
-/* embeddedC/simpleC/avr/simple07/simple.c */
+/* embeddedC/simpleC/avr/simple08/simple.c */
 
-/* A recepção pela UART é feita por interrupção, com um "buffer" de 16 caracteres.
-   A transmissão pela UART não é feita por interrupção, mas por um "busy loop".
+/* Leitura de linha pela UART.
 
-   A biblioteca avr-libc oferece recursos bem mais sofisticados que os usados aqui.
-   Veja a documentação em
-   http://www.nongnu.org/avr-libc/user-manual/group__avr__stdio.html
-   e um exemplo em
-   http://www.nongnu.org/avr-libc/user-manual/group__stdiodemo.html. */
+   A rotina GetLine() oferece uma edição de linha mínima e retorna:
+   - 0 se a linha não está completa, ou seja, ainda não foi teclado <ENTER>
+   - n+1 se a linha está completa, onde n é o número de caracteres da linha
+   Não é UTF8 compatível...
+
+   Para teste, o programa apenas chama a rotina GetLine() e ecoa o conteúdo da
+   linha lida. */
 
 /* baudrate */
 #define BAUDRATE 9600
@@ -78,12 +79,15 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/pgmspace.h>
 
 /* Protótipos */
 void uart_putchar(char c);
 void uart_puts(char* s);
+void uart_puts_P(const char* s);
 unsigned char uart_kbhit(void);
 char uart_getchar(void);
+unsigned char GetLine(void);
 
 
 char UART_RxBuffer[UART_RX_BUFFER_SIZE];
@@ -102,6 +106,15 @@ void uart_puts(char* s)
 {
   char c;
   while((c = *s++))
+    {
+      uart_putchar(c);
+    }
+}
+
+void uart_puts_P(const char* s)
+{
+  char c;
+  while((c = pgm_read_byte(s++)))
     {
       uart_putchar(c);
     }
@@ -128,10 +141,70 @@ char uart_getchar(void)
   return c;
 }
 
+/* número de caracteres no buffer de edição da linha de comando + null */
+#define LINE_BUFFER_SIZE 28
+char LineBuffer[LINE_BUFFER_SIZE];
+
+/*---------------------------------------------------------------------------*
+ * unsigned char GetLine(void)
+ *
+ * Editor de linha simples
+ * Espera por \n e retorna (número de caracteres na linha + 1)
+ * A string da linha (terminada com \0) está em LineBuffer
+ * O número máximo de caracteres é (LINE_BUFFER_SIZE - 1)
+ * Deve ser chamada de dentro de um loop contínuo
+ */
+unsigned char GetLine(void)
+{
+  static unsigned char n = 0;         /* contador de caracteres na linha */
+  unsigned char nchars = 0;
+  char data;
+
+  if(uart_kbhit())
+    {
+      data = uart_getchar();
+      switch(data)
+        {
+        case '\n':
+          LineBuffer[n] = 0;
+          nchars = n + 1;
+          n = 0;
+          break;
+
+        case '\b':                  /* backspace */
+        case 0x7f:                  /* DEL */
+          if(n == 0)
+            uart_putchar('\a');
+          else
+            {
+              uart_puts_P(PSTR("\b \b"));
+              n--;
+            }
+          break;
+
+        default:
+          /* coloco no buffer se não for um caracter de controle */
+          if((unsigned char)data >= ' ')
+            {
+              if(n >= LINE_BUFFER_SIZE - 1)
+                {
+                  uart_putchar('\a');
+                }
+              else
+                {
+                  uart_putchar(data);
+                  LineBuffer[n++] = data;
+                }
+            }
+          break;
+        }
+    }
+  return nchars;
+}
 
 int main(void)
 {
-  char c;
+  unsigned char n = 1;
 
   /* configuro porta do led, sem afetar os outros bits */
   LED_PORT |= (1 << LED);
@@ -162,13 +235,21 @@ int main(void)
   /* habilito interrupções */
   sei();
 
+  uart_puts_P(PSTR("\nWelcome to the Monitor"));
+
   while(1)
     {
-      c = uart_getchar();
-      if(c == '!')
-        uart_puts("Hello World!\n");
-      else
-        uart_putchar(c);
+      if(n)
+        {
+          if(n > 1)
+            {
+              uart_puts_P(PSTR("\nVocê digitou: ->"));
+              uart_puts(LineBuffer);
+              uart_puts_P(PSTR("<-"));
+            }
+          uart_puts_P(PSTR("\n> "));
+        }
+      n = GetLine();
     }
 
   return 0;
