@@ -5,7 +5,7 @@
    A rotina GetLine() oferece uma edição de linha mínima e retorna:
    - 0 se a linha não está completa, ou seja, ainda não foi teclado <ENTER>
    - n+1 se a linha está completa, onde n é o número de caracteres da linha
-   Não é UTF8 compatível...
+   Mais ou menos UTF-8 compatível...
 
    Para teste, o programa apenas chama a rotina GetLine() e ecoa o conteúdo da
    linha lida. */
@@ -179,6 +179,8 @@ unsigned char GetLine(void)
             {
               uart_puts_P(PSTR("\b \b"));
               n--;
+              /* remove whole utf-8 sequence */
+              while((n > 0) && ((LineBuffer[n] & 0xC0)) == 0x80) n--;
             }
           break;
 
