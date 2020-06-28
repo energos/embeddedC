@@ -10,7 +10,7 @@ F_CPU			= 1000000
 OPTIMIZE		= -Os
 
 TARGET			= simple
-OBJ				= simple.o
+OBJ				= simple.o cli.o uart.o
 
 WIN_ISP_PORT	= com3
 LINUX_ISP_PORT	= /dev/ttyUSB0
