@@ -25,7 +25,7 @@ typedef struct
   fct_format_t fct;
 } func_map_t;
 
-unsigned char GetLine(void);
+void monitor(void);
 void breakLine(void);
 void parse(void);
 

@@ -53,11 +53,9 @@
 
 /*---------------------------------------------------------------------------*
  */
+
 int main(void)
 {
-
-  unsigned char n = 1;
-
   /* configuro porta do led, sem afetar os outros bits */
   LED_PORT |= (1 << LED);
   LED_DDR  |= (1 << LED);
@@ -87,17 +85,11 @@ int main(void)
   /* habilito interrupções */
   sei();
 
-  uart_puts_P(PSTR("\nWelcome to the Monitor"));
+  uart_puts_P(PSTR("\nWelcome to the Monitor\n> "));
 
   while(1)
     {
-      if(n)
-        {
-          breakLine();
-          if(ArgsN) parse();
-          uart_puts_P(PSTR("\n> "));
-        }
-      n = GetLine();
+      monitor();
     }
 
   return 0;

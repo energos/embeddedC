@@ -7,8 +7,6 @@
 #include "cli.h"
 #include "uart.h"
 
-void parse(void);
-
 char LineBuffer[LINE_BUFFER_SIZE];
 
 /* array de pointers para strings onde estão os elementos da linha de comando */
@@ -18,18 +16,19 @@ unsigned char ArgsN;
 
 
 /*---------------------------------------------------------------------------*
- * unsigned char GetLine(void)
+ * void monitor(void)
  *
  * Editor de linha simples
- * Espera por \n e retorna (número de caracteres na linha + 1)
  * A string da linha (terminada com \0) está em LineBuffer
  * O número máximo de caracteres é (LINE_BUFFER_SIZE - 1)
  * Deve ser chamada de dentro de um loop contínuo
+ * Ao receber \n quebra a linha em "palavras" e chama o
+ * interpretador de comandos sobre a primeira "palavra"
  */
-unsigned char GetLine(void)
+
+void monitor(void)
 {
   static unsigned char n = 0;         /* contador de caracteres na linha */
-  unsigned char nchars = 0;
   char data;
 
   if(uart_kbhit())
@@ -39,10 +38,11 @@ unsigned char GetLine(void)
         {
         case '\n':
           LineBuffer[n] = 0;
-          nchars = n + 1;
           n = 0;
+          breakLine();
+          if(ArgsN) parse();
+          uart_puts_P(PSTR("\n> "));
           break;
-
         case '\b':                  /* backspace */
         case 0x7f:                  /* DEL */
           if(n == 0)
@@ -55,7 +55,6 @@ unsigned char GetLine(void)
               while((n > 0) && ((LineBuffer[n] & 0xC0)) == 0x80) n--;
             }
           break;
-
         default:
           /* coloco no buffer se não for um caracter de controle */
           if((unsigned char)data >= ' ')
@@ -73,7 +72,6 @@ unsigned char GetLine(void)
           break;
         }
     }
-  return nchars;
 }
 
 /*---------------------------------------------------------------------------*
