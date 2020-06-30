@@ -1,4 +1,4 @@
-/* embeddedC/simpleC/avr/simple10/uart.c */
+/* embeddedC/simpleC/avr/simple11/uart.c */
 
 /* adaptado do Application Note "AVR306: Using the AVR UART in C" da Atmel */
 

@@ -1,4 +1,4 @@
-/* embeddedC/simpleC/avr/simple10/cli.c */
+/* embeddedC/simpleC/avr/simple11/cli.c */
 
 #include <avr/pgmspace.h>
 #include <stdbool.h>
@@ -22,62 +22,9 @@ unsigned char ArgsN;
  * A string da linha (terminada com \0) está em LineBuffer
  * O número máximo de caracteres é (LINE_BUFFER_SIZE - 1)
  * Deve ser chamada de dentro de um loop contínuo
- * Ao receber \n quebra a linha em "palavras" e chama o
+ * Ao receber \n quebra em "palavras" a linha em LineBuffer e chama o
  * interpretador de comandos sobre a primeira "palavra"
- */
-
-void monitor(void)
-{
-  static unsigned char n = 0;         /* contador de caracteres na linha */
-  char data;
-
-  if(uart_kbhit())
-    {
-      data = uart_getchar();
-      switch(data)
-        {
-        case '\n':
-          LineBuffer[n] = 0;
-          n = 0;
-          breakLine();
-          if(ArgsN) parse();
-          uart_puts_P(PSTR("\n> "));
-          break;
-        case '\b':                  /* backspace */
-        case 0x7f:                  /* DEL */
-          if(n == 0)
-            uart_putchar('\a');
-          else
-            {
-              uart_puts_P(PSTR("\b \b"));
-              n--;
-              /* remove whole utf-8 sequence */
-              while((n > 0) && ((LineBuffer[n] & 0xC0)) == 0x80) n--;
-            }
-          break;
-        default:
-          /* coloco no buffer se não for um caracter de controle */
-          if((unsigned char)data >= ' ')
-            {
-              if(n >= LINE_BUFFER_SIZE - 1)
-                {
-                  uart_putchar('\a');
-                }
-              else
-                {
-                  uart_putchar(data);
-                  LineBuffer[n++] = data;
-                }
-            }
-          break;
-        }
-    }
-}
-
-/*---------------------------------------------------------------------------*
- * void breakLine(void)
  *
- * Separa em palavras a linha em LineBuffer
  * Palavra é qualquer conjunto de caracteres delimitado por um ou mais espaços
  * Espaço ou qualquer controle é aceito como delimitador de palavra
  *
@@ -92,37 +39,78 @@ void monitor(void)
  *    pointers para até ARGS_MAX argumentos em Args[0], Args[1], ...
  *
  * Efeito colateral
- *    altera o conteúdo de LineBuffer, os espaços são substituidos por \0
- */
-void breakLine(void)
+ *    altera o conteúdo de LineBuffer, os espaços são substituidos por \0 */
+
+void monitor(void)
 {
+  static unsigned char charn = 0;   /* contador de caracteres na linha */
   char *p = LineBuffer;
   char c;
   bool firstchar = true;
   unsigned char n = 0;
 
-  while((c = *p))
+  if(uart_kbhit())
     {
-      if((unsigned char)c <= ' ')
+      c = uart_getchar();
+      switch(c)
         {
-          firstchar = true;
-          *p = 0;
-        }
-      else
-        {
-          if(firstchar)
+        case '\n':
+          LineBuffer[charn] = 0;
+          charn = 0;
+          /*** break LineBuffer start ***/
+          while((c = *p))
             {
-              if(n >= ARGS_MAX) break;
-              Args[n] = p;
-              n++;
-              firstchar = false;
+              if((unsigned char)c <= ' ')
+                {
+                  firstchar = true;
+                  *p = 0;
+                }
+              else
+                {
+                  if(firstchar)
+                    {
+                      if(n >= ARGS_MAX) break;
+                      Args[n] = p;
+                      n++;
+                      firstchar = false;
+                    }
+                }
+              p++;
             }
+          ArgsN = n;
+          /*** break LineBuffer end ***/
+          if(n) parse();
+          uart_puts_P(PSTR("\n> "));
+          break;
+        case '\b':                  /* backspace */
+        case 0x7f:                  /* DEL */
+          if(charn == 0)
+            uart_putchar('\a');
+          else
+            {
+              uart_puts_P(PSTR("\b \b"));
+              charn--;
+              /* remove whole utf-8 sequence */
+              while((charn > 0) && ((LineBuffer[charn] & 0xC0)) == 0x80) charn--;
+            }
+          break;
+        default:
+          /* coloco no buffer se não for um caracter de controle */
+          if((unsigned char)c >= ' ')
+            {
+              if(charn >= LINE_BUFFER_SIZE - 1)
+                {
+                  uart_putchar('\a');
+                }
+              else
+                {
+                  uart_putchar(c);
+                  LineBuffer[charn++] = c;
+                }
+            }
+          break;
         }
-      p++;
     }
-  ArgsN = n;
-
-  // if(n) parse();
 }
 
 /*---------------------------------------------------------------------------*

@@ -1,4 +1,4 @@
-/* embeddedC/simpleC/avr/simple10/uart.h */
+/* embeddedC/simpleC/avr/simple11/uart.h */
 
 #ifndef _UART_H_
 #define _UART_H_ 1

@@ -1,14 +1,15 @@
-/* embeddedC/simpleC/avr/simple10/simple.c */
+/* embeddedC/simpleC/avr/simple11/simple.c */
 
 /* O arquivo fonte único foi dividido em vários arquivos.
    As rotinas de comunicação via UART estão no arquivo uart.c.
    É iniciada a implementação um interpretador de linha de comando em cli.c.
 
-   Nesse exemplo existem 4 comandos:
+   Nesse exemplo existem 5 comandos:
    - f1 - mostra a mensagem "Essa é a função 1"
-   - f2 - mostra a mensagem "Essa é a função 2"
-   - f3 - mostra a mensagem "Essa é a função 3"
-   - hello (parâmetros) - mostra a mensagem "Hello", seguida da lista de parâmetros e de "!".
+   - hello - mostra a mensagem "Welcome to the Monitor"
+   - dump address nbytes - mostra o conteúdo de nbytes da memória a partir de address
+   - fill value address nbytes - preenche com value nbytes da memória a partir de address
+   - xsum address nbytes - calcula o checksum de nbytes da memória a partir de address
 
    A linha de comando aceita até 4 "palavras", descartando o excedente.
    "Palavra" é qualquer conjunto de caracteres limitado por um ou mais espaços. */

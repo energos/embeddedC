@@ -1,4 +1,4 @@
-/* embeddedC/simpleC/avr/simple10/cli.h */
+/* embeddedC/simpleC/avr/simple11/cli.h */
 
 #ifndef _CLI_H_
 #define _CLI_H_ 1
@@ -26,7 +26,6 @@ typedef struct
 } func_map_t;
 
 void monitor(void);
-void breakLine(void);
 void parse(void);
 
 #endif
