@@ -26,6 +26,5 @@ typedef struct
 } func_map_t;
 
 void monitor(void);
-void parse(void);
 
 #endif
