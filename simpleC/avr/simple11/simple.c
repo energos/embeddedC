@@ -86,7 +86,9 @@ int main(void)
   /* habilito interrupções */
   sei();
 
-  uart_puts_P(PSTR("\nWelcome to the Monitor\n> "));
+  putcrlf();
+  hello();
+  putprompt();
 
   while(1)
     {
