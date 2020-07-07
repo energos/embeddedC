@@ -226,7 +226,7 @@ void dump(void)
         {
           if(i < n)
             {
-              c = *(unsigned char *)a++;
+              c = peek(a++);
               i++;
               puthex_byte(c);
               putspace();
@@ -289,7 +289,7 @@ void fill(void)
 */
 void xsum(void)
 {
-  unsigned char *a;
+  unsigned int a;
   unsigned long int sum = 0;
   unsigned int n;
 
@@ -299,10 +299,10 @@ void xsum(void)
       return;
     }
   n = strtouint(Args[2]);
-  a = (unsigned char *)strtouint(Args[1]);
+  a = strtouint(Args[1]);
   if(erroN) return;
 
-  do { sum += *a++; } while(--n);
+  do { sum += peek(a++); } while(--n);
   puthex_byte(sum >> 16);
   puthex_word(sum);
   putcrlf();

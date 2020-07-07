@@ -46,4 +46,7 @@ void put3spaces(void);
 void putcrlf(void);
 void putprompt(void);
 
+#define poke(X, Y) (*(unsigned char *)(X) = (Y))
+#define peek(X) (*(unsigned char *)(X))
+
 #endif
