@@ -1,15 +1,17 @@
 /* embeddedC/simpleC/avr/simple12/simple.c */
 
-/* O arquivo fonte único foi dividido em vários arquivos.
-   As rotinas de comunicação via UART estão no arquivo uart.c.
-   É iniciada a implementação um interpretador de linha de comando em cli.c.
+/* Leitura de arquivos no formato Intel Hexadecimal.
 
-   Nesse exemplo existem 5 comandos:
+   TODO: Transmissão serial pela UART0 modificada para funcionar por interrupção.
+
+   Nesse exemplo existem 7 comandos:
    - f1 - mostra a mensagem "Essa é a função 1"
    - hello - mostra a mensagem "Welcome to the Monitor"
    - dump address nbytes - mostra o conteúdo de nbytes da memória a partir de address
    - fill value address nbytes - preenche com value nbytes da memória a partir de address
    - xsum address nbytes - calcula o checksum de nbytes da memória a partir de address
+   - ihex - recebe um arquivo no formato Intel Hexadecimal e escreve na memória RAM o conteúdo desse arquivo
+   - ihexv - recebe um arquivo no formato Intel Hexadecimal e verifica a memória RAM com o conteúdo desse arquivo
 
    A linha de comando aceita até 4 "palavras", descartando o excedente.
    "Palavra" é qualquer conjunto de caracteres limitado por um ou mais espaços. */

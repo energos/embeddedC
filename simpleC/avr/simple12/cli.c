@@ -18,9 +18,14 @@ unsigned char ArgsN;
 
 /* buffer temporário para conversões ascii/bin */
 char tempbuffer[8];
+/* buffer temporário para funções dump() e ihexparser() */
+unsigned char aux[32];
 
 /* código de erro */
 unsigned char erroN = 0;
+
+unsigned char ihexmode = 0;
+unsigned char ihexxsum = 0;
 
 /*---------------------------------------------------------------------------*
  * Interpretador de linha de comando.
@@ -45,6 +50,8 @@ static const char fct2_name[] PROGMEM = "fill";
 static const char fct3_name[] PROGMEM = "dump";
 static const char fct4_name[] PROGMEM = "hello";
 static const char fct5_name[] PROGMEM = "xsum";
+static const char fct6_name[] PROGMEM = "ihex";
+static const char fct7_name[] PROGMEM = "ihexv";
 
 // table
 static const func_map_t func_table[] PROGMEM =
@@ -53,7 +60,9 @@ static const func_map_t func_table[] PROGMEM =
    { fct2_name,    fill },
    { fct3_name,    dump },
    { fct4_name,    hello },
-   { fct5_name,    xsum }
+   { fct5_name,    xsum },
+   { fct6_name,    ihex },
+   { fct7_name,    ihexv }
   };
 
 /*---------------------------------------------------------------------------*
@@ -101,65 +110,74 @@ void monitor(void)
           putcrlf();
           LineBuffer[charn] = 0;
           charn = 0;
-          /*** break LineBuffer start ***/
-          while((c = *p))
+          erroN = 0;
+          /*** try parsing as intel hex ***/
+          if(*p == ':')
             {
-              if((unsigned char)c <= ' ')
-                {
-                  firstchar = true;
-                  *p = 0;
-                }
-              else
-                {
-                  if(firstchar)
-                    {
-                      if(n >= ARGS_MAX) break;
-                      Args[n] = p;
-                      n++;
-                      firstchar = false;
-                    }
-                }
-              p++;
+              /* if(ihexmode == IHEX_MODE_IDDLE) */
+              /*   ihexmode = IHEX_MODE_VERIFY; */
+              ihexparser();
             }
-          ArgsN = n;
-          /*** break LineBuffer end ***/
-          /*** parse Args[0] start ***/
-          if(n)
+          else
             {
-              // compare found command against available commands
-              for(n = 0; n < sizeof(func_table) / sizeof(func_map_t); n++)
+              /*** break LineBuffer start ***/
+              while((c = *p))
                 {
-                  // retrieve command name from table
-                  name = (PGM_P)pgm_read_word(&(func_table[n].name));
-                  // compare with typed command
-                  if(strcasecmp_P(Args[0], name) == 0)
+                  if((unsigned char)c <= ' ')
                     {
-                      // found!
-                      // retrieve function pointer
-                      fct = (fct_format_t)pgm_read_word(&(func_table[n].fct));
-                      break;
+                      firstchar = true;
+                      *p = 0;
+                    }
+                  else
+                    {
+                      if(firstchar)
+                        {
+                          if(n >= ARGS_MAX) break;
+                          Args[n] = p;
+                          n++;
+                          firstchar = false;
+                        }
+                    }
+                  p++;
+                }
+              ArgsN = n;
+              /*** break LineBuffer end ***/
+              /*** parse Args[0] start ***/
+              if(n)
+                {
+                  ihexmode = IHEX_MODE_IDDLE;
+                  // compare found command against available commands
+                  for(n = 0; n < sizeof(func_table) / sizeof(func_map_t); n++)
+                    {
+                      // retrieve command name from table
+                      name = (PGM_P)pgm_read_word(&(func_table[n].name));
+                      // compare with typed command
+                      if(strcasecmp_P(Args[0], name) == 0)
+                        {
+                          // found!
+                          // retrieve function pointer
+                          fct = (fct_format_t)pgm_read_word(&(func_table[n].fct));
+                          break;
+                        }
+                    }
+                  // call command
+                  if(fct != NULL)
+                    {
+                      (*fct)();
+                    }
+                  else
+                    {
+                      erroN = ERRO_COMANDO_DESCONHECIDO;
                     }
                 }
-              // call command
-              if(fct != NULL)
-                {
-                  erroN=0;
-                  (*fct)();
-                  if (erroN)
-                    {
-                      uart_puts_P(PSTR("Erro "));
-                      puthex_byte(erroN);
-                      putcrlf();
-                      erroN = 0;
-                    }
-                }
-              else
-                {
-                  uart_puts(Args[0]);
-                  uart_puts_P(PSTR(": command not found\n"));
-                }
+              /*** parse Args[0] end ***/
             }
-          /*** parse Args[0] end ***/
+          if (erroN)
+            {
+              uart_puts_P(PSTR("Erro "));
+              puthex_byte(erroN);
+              putcrlf();
+            }
           putprompt();
           break;
         case '\b':                  /* backspace */
@@ -308,6 +326,18 @@ void xsum(void)
   putcrlf();
 }
 
+void ihex(void)
+{
+  uart_puts_P(PSTR("Receiving..."));
+  ihexmode = IHEX_MODE_WRITE;
+}
+
+void ihexv(void)
+{
+  uart_puts_P(PSTR("Receiving..."));
+  ihexmode = IHEX_MODE_VERIFY;
+}
+
 /* unsigned int to hexadecimal string */
 char *uinttohex(unsigned int x, unsigned char ndigits)
 {
@@ -412,5 +442,157 @@ void putcrlf(void)
 
 void putprompt(void)
 {
+  puthex_byte(ihexmode);        /* testing */
   uart_puts_P(PSTR("> "));
+}
+
+// retorna um caracter da string apontada por pp
+// a cada chamada o ponteiro da string (*pp) será incrementado, a menos
+// que se tenha chegado ao fim da string (\0)
+unsigned char sgetchar(unsigned char **pp)
+{
+  unsigned char c;
+  c = *(*pp);
+  if(c) (*pp)++;      // não deixo o pointer (*pp) ser incrementado além do \0
+  return c;
+}
+
+// converte caracter ascii de 0-9, A-F, a-f em binário de 0x00 até 0x0f
+// retorna 0x00 até 0x0f se caracter for hexadecimal válido, 0xff se não
+unsigned char hex2nibble(unsigned char c)
+{
+  c -= '0';
+  if(c < 10) return c;
+  c |= 0x20;          // passo para minúsculo
+  c -= 'a' - '0' - 0x0a;
+  if(c < 10) return 0xff;
+  if(c < 16) return c;
+  return 0xff;
+}
+
+// converte 2 caracteres hexadecimais (nibbles) da string apontada por pp
+// em um byte (unsigned char) sem sinal (nibble mais significativo primeiro)
+// o checksum (intel hex) é acumulado em ihexxsum
+// se receber caracter hexadecimal inválido, seta a variável global erroN
+// e retorna 0x00
+unsigned char shex_getbyte(unsigned char **pp)
+{
+  unsigned char i;
+  unsigned char nibble;
+  unsigned char n = 0;
+
+  for(i = 0; i < 2; i++)
+    {
+      nibble = hex2nibble(sgetchar(pp));
+      if(nibble == 0xff)
+        {
+          erroN = IHEX_ERROR_NOT_HEX;
+          return 0;
+        }
+      n = (n << 4) + nibble;
+    }
+  ihexxsum += n;
+  return n;
+}
+
+// converte 4 caracteres hexadecimais (nibbles) da string apontada por pp
+// em um word (unsigned int) sem sinal (nibble mais significativo primeiro)
+// o checksum (intel hex) é acumulado em ihexxsum
+unsigned int shex_getword(unsigned char **pp)
+{
+  unsigned int n;
+
+  n = shex_getbyte(pp) << 8;
+  return n + shex_getbyte(pp);
+}
+
+
+/**
+   Intel Hex Record parser
+   hex record de até 32 bytes, ou linha de
+   75 caracteres + NULL (ou CR ou LF) = buffer de 76 bytes
+
+   Por exemplo:
+   :2081A0009804DFC417CAB75FF69277C05AC21318C1359F15D2BEEA620D497449DC986C29E1
+
+   Retorna 0 se linha é intel válida, e código de erro em caso contrário.
+
+   Dependendo da variável global ihexmode é feita escrita ou verificação
+   da memória.
+**/
+// !!! adicionar offset ???
+
+void ihexparser(void)
+{
+  unsigned char n, i;
+  unsigned int address;
+  unsigned char type;
+
+  unsigned char *p = (unsigned char*)LineBuffer;
+
+  // pego ': '
+  if(sgetchar(&p) != ':')
+    {
+      erroN = IHEX_ERROR_NOT_INTEL;
+      return;
+    }
+
+  ihexxsum = 0;
+
+  // pego número de bytes
+  n = shex_getbyte(&p);
+
+  if(n > 32)
+    {
+      erroN = IHEX_ERROR_SIZE;
+      return;
+    }
+
+  // pego endereço
+  address = shex_getword(&p);
+
+  // pego record type
+  type = shex_getbyte(&p);
+
+  // pego n bytes
+  for(i = 0; i < n; i++)
+    {
+      aux[i] = shex_getbyte(&p);
+    }
+
+  // pego xsum (e ignoro-o)
+  shex_getbyte(&p);
+
+  if(erroN)
+    {
+      return;
+    }
+
+  if(ihexxsum)
+    {
+      erroN = IHEX_ERROR_XSUM;
+      return;
+    }
+
+  // se for "End of File Record" aviso
+  if(type == 1) ihexmode = IHEX_MODE_ENDRECORD;
+
+  // ou gravo...
+  if(ihexmode == IHEX_MODE_WRITE)
+    for(i = 0; i < n; i++)
+      {
+        poke(address + i, aux[i]);
+      }
+  // ou verifico...
+  if(ihexmode == IHEX_MODE_VERIFY)
+    for(i = 0; i < n; i++)
+      {
+        if(peek(address + i) != aux[i])
+          {
+            erroN = IHEX_ERROR_VERIFY;
+            return;
+          }
+      }
+  // ou não faço nada
+  return;
 }
