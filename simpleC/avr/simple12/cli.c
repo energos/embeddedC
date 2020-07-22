@@ -123,6 +123,10 @@ void monitor(void)
               /*** break LineBuffer start ***/
               while((c = *p))
                 {
+                  /* ignoro tudo depois de um '#'
+                     isso permite comentários na linha de comando */
+                  if(c == '#') break;
+
                   if((unsigned char)c <= ' ')
                     {
                       firstchar = true;

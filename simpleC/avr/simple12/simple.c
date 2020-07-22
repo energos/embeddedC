@@ -14,7 +14,10 @@
    - ihexv - recebe um arquivo no formato Intel Hexadecimal e verifica a memória RAM com o conteúdo desse arquivo
 
    A linha de comando aceita até 4 "palavras", descartando o excedente.
-   "Palavra" é qualquer conjunto de caracteres limitado por um ou mais espaços. */
+   "Palavra" é qualquer conjunto de caracteres limitado por um ou mais espaços.
+   Qualquer texto depois de um caracter '#', inclusive o próprio, é ignorado.
+   Isso permite "comentários" na linha de comando.
+*/
 
 /* baudrate */
 #define BAUDRATE 9600
