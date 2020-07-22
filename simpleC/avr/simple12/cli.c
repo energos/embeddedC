@@ -104,11 +104,11 @@ void monitor(void)
   if(uart_kbhit())
     {
       c = uart_getchar();
+      LineBuffer[charn] = 0;
       switch(c)
         {
         case '\n':
           putcrlf();
-          LineBuffer[charn] = 0;
           charn = 0;
           erroN = 0;
           /*** try parsing as intel hex ***/
@@ -191,6 +191,11 @@ void monitor(void)
               /* remove whole utf-8 sequence */
               while((charn > 0) && ((LineBuffer[charn] & 0xC0)) == 0x80) charn--;
             }
+          break;
+        case '\f':
+          uart_puts_P(PSTR("\e[2J\e[H"));
+          putprompt();
+          uart_puts(LineBuffer);
           break;
         default:
           /* coloco no buffer se não for um caracter de controle */
