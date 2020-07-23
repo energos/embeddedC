@@ -229,7 +229,6 @@ void dump(void)
   static unsigned int a = 0;
   static unsigned int n = 256;
 
-  unsigned char aux[16];
   unsigned char c;
   unsigned int i = 0;
   unsigned char tab;
