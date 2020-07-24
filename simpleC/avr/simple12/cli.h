@@ -3,6 +3,8 @@
 #ifndef _CLI_H_
 #define _CLI_H_ 1
 
+#define PEEK_AND_POKE_ARE_FUNCTIONS
+
 /* número de caracteres no buffer de edição da linha de comando + null */
 /* originalmente tinha 28 bytes,
    aumentado para caber um intel hex record de 32 bytes (75 caracteres + null) */
@@ -64,7 +66,14 @@ void putcrlf(void);
 void putprompt(void);
 void ihexparser(void);
 
+#ifdef PEEK_AND_POKE_ARE_FUNCTIONS
+void (*poke)(unsigned int address, unsigned char byte);
+unsigned char (*peek)(unsigned int address);
+void ram_write(unsigned int address, unsigned char byte);
+unsigned char ram_read(unsigned int address);
+#else
 #define poke(X, Y) (*(unsigned char *)(X) = (Y))
 #define peek(X) (*(unsigned char *)(X))
+# endif
 
 #endif

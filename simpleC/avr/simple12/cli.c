@@ -604,3 +604,18 @@ void ihexparser(void)
   // ou não faço nada
   return;
 }
+
+#ifdef PEEK_AND_POKE_ARE_FUNCTIONS
+void ram_write(unsigned int address, unsigned char byte)
+{
+    *(unsigned char*)address = byte;
+}
+
+unsigned char ram_read(unsigned int address)
+{
+    return *(unsigned char*)address;
+}
+
+void (*poke)(unsigned int address, unsigned char byte) = ram_write;
+unsigned char (*peek)(unsigned int address) = ram_read;
+#endif
