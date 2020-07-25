@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
+#include <avr/pgmspace.h>
 
 #include "cli.h"
 #include "uart.h"
@@ -26,6 +27,9 @@ unsigned char erroN = 0;
 
 unsigned char ihexmode = 0;
 unsigned char ihexxsum = 0;
+
+/* define qual memória (ram, flash, externa, etc.) será acessada */
+unsigned char memory = 0;
 
 /*---------------------------------------------------------------------------*
  * Interpretador de linha de comando.
@@ -52,6 +56,8 @@ static const char fct4_name[] PROGMEM = "hello";
 static const char fct5_name[] PROGMEM = "xsum";
 static const char fct6_name[] PROGMEM = "ihex";
 static const char fct7_name[] PROGMEM = "ihexv";
+static const char fct8_name[] PROGMEM = "use_ram";
+static const char fct9_name[] PROGMEM = "use_flash";
 
 // table
 static const func_map_t func_table[] PROGMEM =
@@ -62,7 +68,9 @@ static const func_map_t func_table[] PROGMEM =
    { fct4_name,    hello },
    { fct5_name,    xsum },
    { fct6_name,    ihex },
-   { fct7_name,    ihexv }
+   { fct7_name,    ihexv },
+   { fct8_name,    use_ram },
+   { fct9_name,    use_flash }
   };
 
 /*---------------------------------------------------------------------------*
@@ -306,7 +314,7 @@ void fill(void)
     }
   if(erroN) return;
   while(n--)
-    *a++ = byte;
+    poke(a++, byte);
 }
 
 /* xsum address nbytes
@@ -451,6 +459,22 @@ void putcrlf(void)
 void putprompt(void)
 {
   puthex_byte(ihexmode);        /* testing */
+  switch(memory)
+    {
+    case MEMORY_RAM:
+      poke = ram_write;
+      peek = ram_read;
+      uart_putchar('R');        /* testing */
+      break;
+    case MEMORY_FLASH:
+      poke = null_write;
+      peek = flash_read;
+      uart_putchar('F');        /* testing */
+      break;
+    default:
+      uart_putchar('?');        /* testing */
+      break;
+    }
   uart_puts_P(PSTR("> "));
 }
 
@@ -608,14 +632,38 @@ void ihexparser(void)
 #ifdef PEEK_AND_POKE_ARE_FUNCTIONS
 void ram_write(unsigned int address, unsigned char byte)
 {
-    *(unsigned char*)address = byte;
+  *(unsigned char*)address = byte;
 }
 
 unsigned char ram_read(unsigned int address)
 {
-    return *(unsigned char*)address;
+  return *(unsigned char*)address;
+}
+
+void null_write(__attribute__((unused)) unsigned int address, __attribute__((unused)) unsigned char byte)
+{
+#if 1
+  uart_puts_P(PSTR("write failure\n"));
+#endif
+  erroN = ERROR_UNWRITABLE_LOCATION;
+}
+
+unsigned char flash_read(unsigned int address)
+{
+  return pgm_read_byte((unsigned char*)address);
 }
 
 void (*poke)(unsigned int address, unsigned char byte) = ram_write;
 unsigned char (*peek)(unsigned int address) = ram_read;
+
+void use_ram(void)
+{
+  memory = MEMORY_RAM;
+}
+
+void use_flash(void)
+{
+  memory = MEMORY_FLASH;
+}
+
 #endif

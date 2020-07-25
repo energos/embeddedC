@@ -29,12 +29,16 @@
 #define IHEX_ERROR_SIZE        7
 #define IHEX_ERROR_VERIFY      8
 #define IHEX_ERROR_WRITE       9
+#define ERROR_UNWRITABLE_LOCATION 10
 // !!! extern unsigned char erroN;
 
 #define IHEX_MODE_IDDLE         0
 #define IHEX_MODE_VERIFY        1
 #define IHEX_MODE_WRITE         2
 #define IHEX_MODE_ENDRECORD     3
+
+#define MEMORY_RAM              0
+#define MEMORY_FLASH            1
 
 // function pointer prototype
 typedef void (*fct_format_t)(void);
@@ -69,8 +73,13 @@ void ihexparser(void);
 #ifdef PEEK_AND_POKE_ARE_FUNCTIONS
 void (*poke)(unsigned int address, unsigned char byte);
 unsigned char (*peek)(unsigned int address);
+
 void ram_write(unsigned int address, unsigned char byte);
 unsigned char ram_read(unsigned int address);
+void null_write(unsigned int address, unsigned char byte);
+unsigned char flash_read(unsigned int address);
+void use_ram(void);
+void use_flash(void);
 #else
 #define poke(X, Y) (*(unsigned char *)(X) = (Y))
 #define peek(X) (*(unsigned char *)(X))
