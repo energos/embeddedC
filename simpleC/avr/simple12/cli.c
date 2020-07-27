@@ -122,8 +122,6 @@ void monitor(void)
           /*** try parsing as intel hex ***/
           if(*p == ':')
             {
-              /* if(ihexmode == IHEX_MODE_IDDLE) */
-              /*   ihexmode = IHEX_MODE_VERIFY; */
               ihexparser();
             }
           else
@@ -157,7 +155,7 @@ void monitor(void)
               /*** parse Args[0] start ***/
               if(n)
                 {
-                  ihexmode = IHEX_MODE_IDDLE;
+                  ihexmode = IHEXMODE_IDDLE;
                   // compare found command against available commands
                   for(n = 0; n < sizeof(func_table) / sizeof(func_map_t); n++)
                     {
@@ -295,23 +293,18 @@ extern unsigned char _end;
 */
 void fill(void)
 {
-  static unsigned char *a = &_end;
-  unsigned char byte;
-  unsigned int n;
+  static unsigned int a = (unsigned int)&_end;
+  unsigned char byte = 0;
+  unsigned int n = 1;
 
   if(ArgsN > 3)
     n = strtouint(Args[3]);
-  else
-    n = 1;
   if(ArgsN > 2)
-    a = (unsigned char *)strtouint(Args[2]);
+    a = strtouint(Args[2]);
   if(ArgsN > 1)
     byte = strtouint(Args[1]);
   else
-    {
       erroN = ERRO_NUMERO_PARAMETROS_INSUFICIENTE;
-      return;
-    }
   if(erroN) return;
   while(n--)
     poke(a++, byte);
@@ -345,13 +338,13 @@ void xsum(void)
 void ihex(void)
 {
   uart_puts_P(PSTR("Receiving..."));
-  ihexmode = IHEX_MODE_WRITE;
+  ihexmode = IHEXMODE_WRITE;
 }
 
 void ihexv(void)
 {
   uart_puts_P(PSTR("Receiving..."));
-  ihexmode = IHEX_MODE_VERIFY;
+  ihexmode = IHEXMODE_VERIFY;
 }
 
 /* unsigned int to hexadecimal string */
@@ -607,16 +600,16 @@ void ihexparser(void)
     }
 
   // se for "End of File Record" aviso
-  if(type == 1) ihexmode = IHEX_MODE_ENDRECORD;
+  if(type == 1) ihexmode = IHEXMODE_ENDRECORD;
 
   // ou gravo...
-  if(ihexmode == IHEX_MODE_WRITE)
+  if(ihexmode == IHEXMODE_WRITE)
     for(i = 0; i < n; i++)
       {
         poke(address + i, aux[i]);
       }
   // ou verifico...
-  if(ihexmode == IHEX_MODE_VERIFY)
+  if(ihexmode == IHEXMODE_VERIFY)
     for(i = 0; i < n; i++)
       {
         if(peek(address + i) != aux[i])

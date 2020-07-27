@@ -19,23 +19,24 @@
 // !!! extern unsigned char ArgsN;
 
 /* códigos de erro retornado por erroN */
-#define ERRO_NENHUM            0
-#define ERRO_COMANDO_DESCONHECIDO 1
-#define ERRO_NUMERO_PARAMETROS_INSUFICIENTE 2
-#define ERRO_NUMERO_INVALIDO   3
-#define IHEX_ERROR_NOT_INTEL   4
-#define IHEX_ERROR_NOT_HEX     5
-#define IHEX_ERROR_XSUM        6
-#define IHEX_ERROR_SIZE        7
-#define IHEX_ERROR_VERIFY      8
-#define IHEX_ERROR_WRITE       9
-#define ERROR_UNWRITABLE_LOCATION 10
-// !!! extern unsigned char erroN;
+enum {
+      ERRO_NENHUM = 0,
+      ERRO_COMANDO_DESCONHECIDO,
+      ERRO_NUMERO_PARAMETROS_INSUFICIENTE,
+      ERRO_NUMERO_INVALIDO,
+      IHEX_ERROR_NOT_INTEL,
+      IHEX_ERROR_NOT_HEX,
+      IHEX_ERROR_XSUM,
+      IHEX_ERROR_SIZE,
+      IHEX_ERROR_VERIFY,
+      IHEX_ERROR_WRITE,
+      ERROR_UNWRITABLE_LOCATION };
 
-#define IHEX_MODE_IDDLE         0
-#define IHEX_MODE_VERIFY        1
-#define IHEX_MODE_WRITE         2
-#define IHEX_MODE_ENDRECORD     3
+enum {
+      IHEXMODE_IDDLE = 0,
+      IHEXMODE_VERIFY,
+      IHEXMODE_WRITE,
+      IHEXMODE_ENDRECORD };
 
 #define MEMORY_RAM              0
 #define MEMORY_FLASH            1
