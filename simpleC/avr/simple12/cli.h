@@ -70,6 +70,10 @@ void put3spaces(void);
 void putcrlf(void);
 void putprompt(void);
 void ihexparser(void);
+unsigned char hex2nibble(unsigned char c);
+unsigned char sgetchar(unsigned char **pp);
+unsigned char shex_getbyte(unsigned char **pp);
+unsigned int shex_getword(unsigned char **pp);
 
 #ifdef PEEK_AND_POKE_ARE_FUNCTIONS
 void (*poke)(unsigned int address, unsigned char byte);
