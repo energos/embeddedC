@@ -12,12 +12,26 @@ char UART_RxBuffer[UART_RX_BUFFER_SIZE];
 volatile unsigned char UART_RxHead = 0;
 unsigned char UART_RxTail = 0;
 
+char UART_TxBuffer[UART_TX_BUFFER_SIZE];
+unsigned char UART_TxHead = 0;
+volatile unsigned char UART_TxTail = 0;
+
+
 void uart_putchar(char c)
 {
+  unsigned char tmphead;
+
   if(c == '\n')
     uart_putchar('\r');
-  while(!(UCSRA & (1 << UDRE)));    // loop_until_bit_is_set(UCSRA, UDRE);
-  UDR = c;
+
+  tmphead = (UART_TxHead + 1) & UART_TX_BUFFER_MASK;
+  while(tmphead == UART_TxTail);
+
+  UART_TxBuffer[tmphead] = c;
+  UART_TxHead = tmphead;
+
+  /* habilito interrupção */
+  UCSRB |= (1 << UDRIE);
 }
 
 void uart_puts(char* s)
@@ -76,4 +90,24 @@ ISR(USART_RX_vect)
 
   /* salvo caracter no buffer */
   UART_RxBuffer[tmphead] = UDR;
+}
+
+ISR(USART_UDRE_vect)
+{
+  unsigned char tmptail;
+
+  if(UART_TxHead != UART_TxTail)
+    {
+      /* se ainda há dados para transmitir */
+      /* calculo e salvo novo apontador */
+      tmptail = (UART_TxTail + 1) & UART_TX_BUFFER_MASK;
+      UART_TxTail = tmptail;
+      /* transmito o dado */
+      UDR = UART_TxBuffer[tmptail];
+    }
+  else
+    {
+      /* se não há dados, desabilito interrupção */
+      UCSRB &= ~(1 << UDRIE);
+    }
 }

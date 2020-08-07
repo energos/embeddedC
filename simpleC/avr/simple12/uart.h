@@ -16,6 +16,13 @@
 #error "UART_RX_BUFFER_SIZE NÃO É POTÊNCIA DE 2"
 #endif
 
+/* tamanho do buffer de transmissão da UART */
+#define UART_TX_BUFFER_SIZE 16
+#define UART_TX_BUFFER_MASK (UART_TX_BUFFER_SIZE - 1)
+#if (UART_TX_BUFFER_SIZE & UART_TX_BUFFER_MASK)
+#error "UART_TX_BUFFER_SIZE NÃO É POTÊNCIA DE 2"
+#endif
+
 /*---------------------------------------------------------------------------*
  * Cálculo da constante UBRR (Baud Rate Register)
  * BAUD2X pode ser 0 ou 1
