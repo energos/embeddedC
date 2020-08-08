@@ -19,9 +19,6 @@
    Isso permite "comentários" na linha de comando.
 */
 
-/* baudrate */
-#define BAUDRATE 9600
-
 /* tempo de interrupção do timer 0 em µs */
 #define T0TICK 1000UL
 

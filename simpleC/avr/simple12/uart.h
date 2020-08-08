@@ -4,9 +4,7 @@
 #define _UART_H_ 1
 
 /* baudrate */
-#ifndef BAUDRATE
 #define BAUDRATE 9600
-#endif
 #define BAUD2X 1
 
 /* tamanho do buffer de recepção da UART */
