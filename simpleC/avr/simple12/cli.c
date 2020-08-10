@@ -335,15 +335,18 @@ void xsum(void)
   putcrlf();
 }
 
+
+static const char msg_receiving [] PROGMEM = "Receiving...\n";
+
 void ihex(void)
 {
-  uart_puts_P(PSTR("Receiving..."));
+  uart_puts_P(msg_receiving);
   ihexmode = IHEXMODE_WRITE;
 }
 
 void ihexv(void)
 {
-  uart_puts_P(PSTR("Receiving..."));
+  uart_puts_P(msg_receiving);
   ihexmode = IHEXMODE_VERIFY;
 }
 
@@ -451,7 +454,21 @@ void putcrlf(void)
 
 void putprompt(void)
 {
-  puthex_byte(ihexmode);        /* testing */
+  switch(ihexmode)              /* testing */
+    {
+    case IHEXMODE_IDDLE:
+      uart_putchar('I');
+      break;
+    case IHEXMODE_VERIFY:
+      uart_putchar('V');
+      break;
+    case IHEXMODE_WRITE:
+      uart_putchar('W');
+      break;
+    default:
+      uart_putchar('?');
+      break;
+    }
   switch(memory)
     {
     case MEMORY_RAM:
@@ -599,26 +616,36 @@ void ihexparser(void)
       return;
     }
 
-  // se for "End of File Record" aviso
-  if(type == 1) ihexmode = IHEXMODE_ENDRECORD;
+  // se "End of File Record" termino
+  if(type == 1)
+    {
+      ihexmode = IHEXMODE_IDDLE;
+      return;
+    }
 
-  // ou gravo...
-  if(ihexmode == IHEXMODE_WRITE)
-    for(i = 0; i < n; i++)
-      {
-        poke(address + i, aux[i]);
-      }
-  // ou verifico...
-  if(ihexmode == IHEXMODE_VERIFY)
-    for(i = 0; i < n; i++)
-      {
-        if(peek(address + i) != aux[i])
-          {
-            erroN = IHEX_ERROR_VERIFY;
-            return;
-          }
-      }
-  // ou não faço nada
+  // gravo ou verifico
+  switch(ihexmode)
+    {
+    case IHEXMODE_WRITE:
+      for(i = 0; i < n; i++)
+        {
+          poke(address + i, aux[i]);
+          if(erroN) ihexmode = IHEXMODE_IDDLE;
+        }
+      break;
+    case IHEXMODE_VERIFY:
+      for(i = 0; i < n; i++)
+        {
+          if(peek(address + i) != aux[i])
+            {
+              erroN = IHEX_ERROR_VERIFY;
+              ihexmode = IHEXMODE_IDDLE;
+              break;;
+            }
+        }
+      break;
+    }
+
   return;
 }
 
@@ -635,9 +662,6 @@ unsigned char ram_read(unsigned int address)
 
 void null_write(__attribute__((unused)) unsigned int address, __attribute__((unused)) unsigned char byte)
 {
-#if 1
-  uart_puts_P(PSTR("write failure\n"));
-#endif
   erroN = ERROR_UNWRITABLE_LOCATION;
 }
 
