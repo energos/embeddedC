@@ -58,4 +58,6 @@ void uart_puts_P(const char* s);
 unsigned char uart_kbhit(void);
 char uart_getchar(void);
 
+extern unsigned char uart_receive_overflow_timeout;
+
 #endif

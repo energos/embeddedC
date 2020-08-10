@@ -26,6 +26,7 @@
 #define LED_PORT    PORTB
 #define LED_DDR     DDRB
 #define LED         PB0
+#define LED_UART_RECEIVE_OVERFLOW PB7
 
 /*---------------------------------------------------------------------------*
  *
@@ -60,8 +61,8 @@
 int main(void)
 {
   /* configuro porta do led, sem afetar os outros bits */
-  LED_PORT |= (1 << LED);
-  LED_DDR  |= (1 << LED);
+  LED_PORT |= (1 << LED) | (1 << LED_UART_RECEIVE_OVERFLOW);
+  LED_DDR  |= (1 << LED) | (1 << LED_UART_RECEIVE_OVERFLOW);
 
   /* timer0 free-running, gerando interrupção a cada 1 ms */
   /* prescaler = clock/8 */
@@ -108,5 +109,15 @@ ISR(TIMER0_COMP_vect)
     {
       prescaler = 0;
       LED_PORT ^= (1 << LED);
+
+      /* uart receive overflow led */
+      if(uart_receive_overflow_timeout > 0)
+        {
+          uart_receive_overflow_timeout--;
+          LED_PORT &= ~(1 << LED_UART_RECEIVE_OVERFLOW);
+        }
+      else
+        LED_PORT |= (1 << LED_UART_RECEIVE_OVERFLOW);
+
     }
 }

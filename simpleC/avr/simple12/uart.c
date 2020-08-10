@@ -73,6 +73,8 @@ char uart_getchar(void)
   return c;
 }
 
+unsigned char uart_receive_overflow_timeout = 0;
+
 ISR(USART_RX_vect)
 {
   unsigned char tmphead;
@@ -81,12 +83,12 @@ ISR(USART_RX_vect)
   tmphead = (UART_RxHead + 1) & UART_RX_BUFFER_MASK;
   UART_RxHead = tmphead;
 
-  /*
-    if(tmphead == UART_RxTail)
+  if(tmphead == UART_RxTail)
     {
-    // Overflow! Incluir tratamento se necessário.
+      // Overflow! Incluir tratamento se necessário.
+      /* For now flash a LED for 5 seconds */
+      uart_receive_overflow_timeout = 5;
     }
-  */
 
   /* salvo caracter no buffer */
   UART_RxBuffer[tmphead] = UDR;
